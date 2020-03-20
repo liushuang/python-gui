@@ -2,25 +2,31 @@
 # -*- coding: utf-8 -*-
 
 import tkinter as tk 
+import threading
+import time as time
 
 window = tk.Tk()
 
 window.title("My window")
 
-window.geometry('500x300')
+window.geometry('500x500')
 
-var = tk.StringVar()
-l = tk.Label(window, textvariable=var, bg='green', font=('Arial', 12), width=30, height=2)
-l.pack()
-on_hit = False
-def hit_me():
-    global on_hit
-    if on_hit == False:
-        on_hit = True
-        var.set('you hit me')
-    else:
-        on_hit = False
-        var.set('')
-b = tk.Button(window, text="hit me", command=hit_me)
-b.pack()
+labels =[]
+for i in range(10):
+    row = []
+    for j in range(10):
+        label = tk.Label(bg="red", width=1, height=1)
+        label.grid(row=i, column=j)
+        row.append(label)
+    labels.append(row)
+
+def change_color():
+    for k in range(10):
+        time.sleep(1)
+        labels[k][k].configure(bg="yellow")
+
+thr = threading.Thread(target=change_color)
+thr.start()
+
 window.mainloop()
+
