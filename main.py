@@ -78,22 +78,26 @@ def create_bean():
             break
 
 create_bean()
+snake_tail_row=head_row
+snake_tail_cell =head_cell
+def print_snake():
+    for row in range(height+2):
+        print(snake[row])
 
-
-def bfs(temp_map, row, cell, step):
+def bfs(temp_map, from_r, from_c, step):
     next_search = []
-    if temp_map[row + 1][cell] > step + 1:
-        temp_map[row + 1][cell] = step + 1
-        next_search.append((row + 1, cell))
-    if temp_map[row - 1][cell] > step + 1:
-        temp_map[row - 1][cell] = step + 1
-        next_search.append((row - 1, cell))
-    if temp_map[row][cell + 1] > step + 1:
-        temp_map[row][cell + 1] = step + 1
-        next_search.append((row, cell + 1))
-    if temp_map[row][cell - 1] > step + 1:
-        temp_map[row][cell - 1] = step + 1
-        next_search.append((row, cell - 1))
+    if temp_map[from_r + 1][from_c] != -1 and temp_map[from_r + 1][from_c] > step + 1:
+        temp_map[from_r + 1][from_c] = step + 1
+        next_search.append((from_r + 1, from_c))
+    if temp_map[from_r - 1][from_c] != -1 and temp_map[from_r - 1][from_c] > step + 1:
+        temp_map[from_r - 1][from_c] = step + 1
+        next_search.append((from_r - 1, from_c))
+    if temp_map[from_r][from_c + 1] != -1 and temp_map[from_r][from_c + 1] > step + 1:
+        temp_map[from_r][from_c + 1] = step + 1
+        next_search.append((from_r, from_c + 1))
+    if temp_map[from_r][from_c - 1] != -1 and temp_map[from_r][from_c - 1] > step + 1:
+        temp_map[from_r][from_c - 1] = step + 1
+        next_search.append((from_r, from_c - 1))
     for (r,w) in next_search:
         bfs(temp_map,r,w,step+1)
 
@@ -110,25 +114,53 @@ def find_next_move(temp_map, r, c):
     if temp_map[r][c+1] == step - 1:
         return find_next_move(temp_map, r, c+1)
 
-def can_move_to_bean():
+def can_move_to(from_r, from_c, to_r, to_c):
     temp_map = [[sys.maxsize for i in range(width + 2)] for j in range(height + 2)]
     for r in range(height+2):
         for c in range(width+2):
             if snake[r][c] == 1 or snake[r][c] == 2:
                 temp_map[r][c] = -1
-    temp_map[head_row][head_cell] = 1
-    bfs(temp_map, head_row, head_cell, 1)
-    for row in range(height+2):
-        print(temp_map[row])
-    if temp_map[bean_row][bean_cell] < sys.maxsize:
-        return find_next_move(temp_map, bean_row, bean_cell)
+    temp_map[from_r][from_c] = 1
+    temp_map[to_r][to_c] = sys.maxsize
+    bfs(temp_map, from_r, from_c, 1)
+    # for row in range(height+2):
+    #     print(temp_map[row])
+    if temp_map[to_r][to_c] < sys.maxsize:
+        return find_next_move(temp_map, to_r, to_c)
     return (-1,-1)
+
+def do_wonder():
+    global direction
+    if snake[head_row+1][head_cell] == 0 or snake[head_row+1][head_cell] == 3:
+        if can_move_to(head_row + 1, head_cell, snake_tail_row, snake_tail_cell) != (-1,-1):
+            direction = "down"
+            return
+    if snake[head_row - 1][head_cell] == 0 or snake[head_row - 1][head_cell] == 3:
+        if can_move_to(head_row - 1, head_cell, snake_tail_row, snake_tail_cell) != (-1,-1):
+            direction = "up"
+            return
+    if snake[head_row][head_cell + 1] == 0 or snake[head_row][head_cell + 1] == 3:
+        if can_move_to(head_row, head_cell + 1, snake_tail_row, snake_tail_cell) != (-1,-1):
+            direction = "right"
+            return
+    if snake[head_row][head_cell - 1] == 0 or snake[head_row][head_cell - 1] == 3:
+        if can_move_to(head_row, head_cell - 1, snake_tail_row, snake_tail_cell) != (-1,-1):
+            direction = "left"
+            return
+
+    print("wonder fail")
+    print_snake()
 
 def choose_next_step():
     global direction
     # 如果可以吃到豆子
-    (row, cell) = can_move_to_bean()
+    (row, cell) = can_move_to(head_row, head_cell, bean_row, bean_cell)
     if row != -1:
+        (can_reach_r, can_reach_c) = can_move_to(row, cell, snake_tail_row, snake_tail_cell)
+        # 如果往下走一步，就不能存活，尝试wonder
+        if can_reach_r == -1:
+            return do_wonder()
+        # 如果可以存活，则走向豆子
         if row == head_row + 1:
             direction = "down"
         elif row == head_row -1:
@@ -137,10 +169,8 @@ def choose_next_step():
             direction = "right"
         else:
             direction = "left"
-      # 测试往下走一步，能否存活？
-
-    # wonder一步
-
+    else:
+        do_wonder()
 
 
 def move():
@@ -150,7 +180,7 @@ def move():
     global snake_tail_cell
     while True:
         choose_next_step()
-        time.sleep(0.3)
+        time.sleep(0.1)
         next_row = head_row
         next_cell = head_cell
         if direction == "right":
@@ -161,12 +191,13 @@ def move():
             next_row = next_row - 1
         elif direction == "down":
             next_row = next_row + 1
+
         if snake[next_row][next_cell] == 1 or snake[next_row][next_cell] == 2:
-            tkinter.messagebox.showerror(message="failed")
-            break
+            if next_row != snake_tail_row or next_cell != snake_tail_cell:
+                tkinter.messagebox.showerror(message="failed")
+                break
 
         labels[next_row][next_cell].configure(bg="blue")
-
         snake_queue.put((next_row, next_cell))
         head_row = next_row
         head_cell = next_cell
