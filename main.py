@@ -12,11 +12,11 @@ import sys
 
 window = tk.Tk()
 
-window.title("My window")
+window.title("")
 
 window.geometry('500x500')
-width = 5
-height = 5
+width = 10
+height = 10
 
 # 0：空的, 白色
 # 1：不可达，黑色
@@ -55,18 +55,24 @@ for i in range(height + 2):
         elif snake[i][j] == 1:
             bg_color = "black"
         elif snake[i][j] == 2:
-            bg_color = "blue"
+            bg_color = "green"
         elif snake[i][j] == 3:
             bg_color = "red"
 
-        label = tk.Label(bg=bg_color, width=1, height=1)
-        label.grid(row=i, column=j)
+        label = tk.Label(bg=bg_color, width=2, height=1)
+        padx = 0
+        pady = 0
+        if i == 0 or i == height + 1 or j == 0 or j == width +1:
+            padx = 1
+            pady = 1
+        label.grid(row=i, column=j, ipadx=padx, ipady=pady)
         row.append(label)
     labels.append(row)
 
 def create_bean():
     global bean_row
     global bean_cell
+    # random.seed(0)
     while True:
         w = int(random.random() * width + 1)
         h = int(random.random() * height + 1)
@@ -86,18 +92,27 @@ def print_snake():
 
 def bfs(temp_map, from_r, from_c, step):
     next_search = []
-    if temp_map[from_r + 1][from_c] != -1 and temp_map[from_r + 1][from_c] > step + 1:
-        temp_map[from_r + 1][from_c] = step + 1
-        next_search.append((from_r + 1, from_c))
-    if temp_map[from_r - 1][from_c] != -1 and temp_map[from_r - 1][from_c] > step + 1:
-        temp_map[from_r - 1][from_c] = step + 1
-        next_search.append((from_r - 1, from_c))
-    if temp_map[from_r][from_c + 1] != -1 and temp_map[from_r][from_c + 1] > step + 1:
-        temp_map[from_r][from_c + 1] = step + 1
-        next_search.append((from_r, from_c + 1))
-    if temp_map[from_r][from_c - 1] != -1 and temp_map[from_r][from_c - 1] > step + 1:
-        temp_map[from_r][from_c - 1] = step + 1
-        next_search.append((from_r, from_c - 1))
+    test_direction_order =["up","down", "left", "right"]
+    random.shuffle(test_direction_order)
+
+    for test_direction in test_direction_order:
+        if test_direction == "up":
+            if temp_map[from_r - 1][from_c] != -1 and temp_map[from_r - 1][from_c] > step + 1:
+                temp_map[from_r - 1][from_c] = step + 1
+                next_search.append((from_r - 1, from_c))
+        elif test_direction == "down":
+            if temp_map[from_r + 1][from_c] != -1 and temp_map[from_r + 1][from_c] > step + 1:
+                temp_map[from_r + 1][from_c] = step + 1
+                next_search.append((from_r + 1, from_c))
+        elif test_direction == "left":
+            if temp_map[from_r][from_c - 1] != -1 and temp_map[from_r][from_c - 1] > step + 1:
+                temp_map[from_r][from_c - 1] = step + 1
+                next_search.append((from_r, from_c - 1))
+        elif test_direction == "right":
+            if temp_map[from_r][from_c + 1] != -1 and temp_map[from_r][from_c + 1] > step + 1:
+                temp_map[from_r][from_c + 1] = step + 1
+                next_search.append((from_r, from_c + 1))
+
     for (r,w) in next_search:
         bfs(temp_map,r,w,step+1)
 
@@ -105,16 +120,25 @@ def find_next_move(temp_map, r, c):
     step = temp_map[r][c]
     if step == 2:
         return (r, c)
-    if temp_map[r-1][c] == step - 1:
-        return find_next_move(temp_map, r-1, c)
-    if temp_map[r+1][c] == step - 1:
-        return find_next_move(temp_map, r+1, c)
-    if temp_map[r][c-1] == step - 1:
-        return find_next_move(temp_map, r, c-1)
-    if temp_map[r][c+1] == step - 1:
-        return find_next_move(temp_map, r, c+1)
+    test_nextmove_order = ["up", "down", "left", "right"]
+    random.shuffle(test_nextmove_order)
+    for next_move in test_nextmove_order:
+        if next_move == "up":
+            if temp_map[r-1][c] == step - 1:
+                return find_next_move(temp_map, r-1, c)
+        elif next_move == "down":
+            if temp_map[r+1][c] == step - 1:
+                return find_next_move(temp_map, r+1, c)
+        elif next_move == "left":
+            if temp_map[r][c-1] == step - 1:
+                return find_next_move(temp_map, r, c-1)
+        elif next_move == "right":
+            if temp_map[r][c+1] == step - 1:
+                return find_next_move(temp_map, r, c+1)
 
 def can_move_to(from_r, from_c, to_r, to_c):
+    if from_r == to_r and from_c == to_c:
+        return (from_r, from_c)
     temp_map = [[sys.maxsize for i in range(width + 2)] for j in range(height + 2)]
     for r in range(height+2):
         for c in range(width+2):
@@ -131,22 +155,65 @@ def can_move_to(from_r, from_c, to_r, to_c):
 
 def do_wonder():
     global direction
-    if snake[head_row+1][head_cell] == 0 or snake[head_row+1][head_cell] == 3:
-        if can_move_to(head_row + 1, head_cell, snake_tail_row, snake_tail_cell) != (-1,-1):
-            direction = "down"
-            return
-    if snake[head_row - 1][head_cell] == 0 or snake[head_row - 1][head_cell] == 3:
-        if can_move_to(head_row - 1, head_cell, snake_tail_row, snake_tail_cell) != (-1,-1):
-            direction = "up"
-            return
-    if snake[head_row][head_cell + 1] == 0 or snake[head_row][head_cell + 1] == 3:
-        if can_move_to(head_row, head_cell + 1, snake_tail_row, snake_tail_cell) != (-1,-1):
-            direction = "right"
-            return
-    if snake[head_row][head_cell - 1] == 0 or snake[head_row][head_cell - 1] == 3:
-        if can_move_to(head_row, head_cell - 1, snake_tail_row, snake_tail_cell) != (-1,-1):
-            direction = "left"
-            return
+    test_direction_order = []
+    # 豆子在右下方
+    if snake_tail_row >= head_row and snake_tail_cell >= head_cell:
+        test_direction_order.append("up")
+        test_direction_order.append("left")
+        test_direction_order.append("right")
+        test_direction_order.append("down")
+    # 豆子在左下方
+    elif snake_tail_row >= head_row and snake_tail_cell <= head_cell:
+        test_direction_order.append("up")
+        test_direction_order.append("right")
+        test_direction_order.append("left")
+        test_direction_order.append("down")
+    # 豆子在右上方
+    elif snake_tail_row <= head_row and snake_tail_cell >= head_cell:
+        test_direction_order.append("left")
+        test_direction_order.append("down")
+        test_direction_order.append("right")
+        test_direction_order.append("up")
+    # 豆子在左上方
+    elif snake_tail_row <= head_row and snake_tail_cell <= head_cell:
+        test_direction_order.append("down")
+        test_direction_order.append("right")
+        test_direction_order.append("left")
+        test_direction_order.append("up")
+    if head_row == 2:
+        test_direction_order.remove("up")
+        test_direction_order.append("up")
+    if head_row == height -1:
+        test_direction_order.remove("down")
+        test_direction_order.append("down")
+    if head_cell == 2:
+        test_direction_order.remove("left")
+        test_direction_order.append("left")
+    if head_cell == width - 1:
+        test_direction_order.remove("right")
+        test_direction_order.append("right")
+
+    for test_direction in test_direction_order:
+        if test_direction == "down":
+            if snake[head_row+1][head_cell] == 0 or snake[head_row+1][head_cell] == 3:
+                if can_move_to(head_row + 1, head_cell, snake_tail_row, snake_tail_cell) != (-1,-1):
+                    direction = "down"
+                    return
+        elif test_direction == "up":
+            if snake[head_row - 1][head_cell] == 0 or snake[head_row - 1][head_cell] == 3:
+                if can_move_to(head_row - 1, head_cell, snake_tail_row, snake_tail_cell) != (-1,-1):
+                    direction = "up"
+                    return
+        elif test_direction == "right":
+            if snake[head_row][head_cell + 1] == 0 or snake[head_row][head_cell + 1] == 3:
+                if can_move_to(head_row, head_cell + 1, snake_tail_row, snake_tail_cell) != (-1,-1):
+                    direction = "right"
+                    return
+        elif test_direction == "left":
+            if snake[head_row][head_cell - 1] == 0 or snake[head_row][head_cell - 1] == 3:
+                if can_move_to(head_row, head_cell - 1, snake_tail_row, snake_tail_cell) != (-1,-1):
+                    direction = "left"
+                    return
 
     print("wonder fail")
     print_snake()
@@ -178,9 +245,11 @@ def move():
     global head_cell
     global snake_tail_row
     global snake_tail_cell
+    global snake_length
+    time.sleep(10)
     while True:
         choose_next_step()
-        time.sleep(0.1)
+        time.sleep(0.03)
         next_row = head_row
         next_cell = head_cell
         if direction == "right":
@@ -196,8 +265,8 @@ def move():
             if next_row != snake_tail_row or next_cell != snake_tail_cell:
                 tkinter.messagebox.showerror(message="failed")
                 break
-
-        labels[next_row][next_cell].configure(bg="blue")
+        labels[head_row][head_cell].configure(bg="blue")
+        labels[next_row][next_cell].configure(bg="green")
         snake_queue.put((next_row, next_cell))
         head_row = next_row
         head_cell = next_cell
@@ -211,6 +280,7 @@ def move():
         # 吃豆子
         elif snake[next_row][next_cell] == 3:
             create_bean()
+            snake_length = snake_length + 1
         snake[next_row][next_cell] = 2
 
 def listen_keyboard(event):
